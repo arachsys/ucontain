@@ -53,6 +53,14 @@ re-exec from that before joining untrusted containers. We use seal from
 Arachsys init to do this on behalf of nsenter.
 
 
+isolate
+-------
+
+To run a command without network access, use an isolated network namespace.
+If we are unprivileged, we must also create a pass-through user namespace
+to allow the network namespace to be unshared.
+
+
 pseudo
 ------
 

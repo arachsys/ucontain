@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: ${0##*/} CMD [ARG]..." >&2
+  exit 64
+fi
+
+if [[ $UID -eq 0 ]]; then
+  exec unshare --ipc --net -- "$@"
+else
+  exec unshare --ipc --net --user --map-current -- "$@"
+fi
