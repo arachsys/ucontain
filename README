@@ -1,0 +1,67 @@
+ucontain
+========
+
+These bash scripts are a simplified reimplementation of my 2013 containers
+package. They wrap unshare and nsenter from util-linux, newuidmap and
+newgidmap from shadow-utils, pivot and seal from Arachsys init. Despite
+their brevity, they deliver the key features with the same security story.
+
+My aim is to demonstrate how to use namespaces and ad hoc containers in your
+own scripts, so the notes below focus on implementation rather than usage.
+
+
+contain
+-------
+
+This first re-execs itself in fresh namespaces with unshare, passing the
+--map-auto and --map-root-user flags to set user namespace mappings using
+setuid newuidmap/newgidmap from shadow-utils. It detects this is done when
+its PID is 1 and UID is 0.
+
+After making the required bind mounts, we must pivot into the new root
+filesystem and detach the old one before running the container init. This
+needs care as the umount binary can't be trusted after a pivot_root() call.
+
+Even if umount from the old root is run by absolute path, the untrusted
+dynamic linker from the new root would be used, and if old ld.so is invoked
+directly on old umount, it must somehow be configured to search only paths
+on the old root. Both ld.so and umount must ignore any configuration from
+new /etc. This would be dangerously fragile, depending on implementation
+details of ld.so, libc and umount.
+
+However, unlike pivot_root from util-linux, pivot from Arachsys init can
+safely detach the old root before it returns, sidestepping any difficulty.
+
+
+inject
+------
+
+A straightforward nsenter is nearly sufficient here, apart from the magic
+treatment of /proc/PID/exe which would introduce a security hole. Although
+stat() sees this as a symlink to the absolute path of the binary, open()
+accesses the binary itself whether or not the symlink can be resolved in the
+filesystem namespace of the opening process.
+
+Inside a container, this leaks a path to any host binary that joins that
+container's namespaces. CVE-2019-5736 describes an attack on runC
+'privileged containers' using this route: as the host root user is
+mapped within the container, a container process can open the relevant
+/proc/PID/exe file for writing and compromise it.
+
+The standard fix is for binaries to clone themselves to a sealed memfd and
+re-exec from that before joining untrusted containers. We use seal from
+Arachsys init to do this on behalf of nsenter.
+
+
+pseudo
+------
+
+This is recreated by unshare --user. We pass --map-auto and --map-root-user
+to set user namespace mappings using newuidmap/newgidmap, as with contain.
+
+
+Copying
+-------
+
+These scripts were written by Chris Webb <chris@arachsys.com> and are
+distributed as Free Software under the terms of the MIT license in COPYING.
