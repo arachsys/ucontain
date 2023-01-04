@@ -1,0 +1,8 @@
+#!/bin/bash -e
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: ${0##*/} CMD [ARG]..." >&2
+  exit 64
+fi
+
+exec unshare --user --map-auto --map-root-user -- "$@"

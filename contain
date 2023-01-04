@@ -1,0 +1,37 @@
+#!/bin/bash -e
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: ${0##*/} DIR CMD [ARG]..." >&2
+  exit 64
+fi
+
+if [[ $UID -ne 0 ]] || [[ $$ -ne 1 ]]; then
+  exec unshare --cgroup --ipc --mount --net --pid --time --user --uts \
+    --fork --kill-child --map-auto --map-root-user env -i "$0" "$@"
+fi
+
+mount -o rbind -- "$1" "$1"
+cd -- "$1"
+
+if [[ -d proc ]]; then
+  mount -t proc proc proc
+fi
+
+if [[ -d dev ]]; then
+  mount -t tmpfs -o mode=0755 tmpfs dev
+  for NODE in full null random tty urandom zero; do
+    touch dev/$NODE && mount -o bind /dev/$NODE dev/$NODE
+  done
+
+  mkdir -p dev/pts
+  mount -t devpts -o ptmxmode=0666 devpts dev/pts
+  ln -s pts/ptmx dev/ptmx
+
+  ln -s /proc/self/fd dev/fd
+  ln -s fd/0 dev/stdin
+  ln -s fd/1 dev/stdout
+  ln -s fd/2 dev/stderr
+fi
+
+pivot .
+exec -- "${@:2}"

@@ -1,0 +1,8 @@
+#!/bin/bash -e
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: ${0##*/} PID CMD [ARG]..." >&2
+  exit 64
+fi
+
+exec seal nsenter --all --preserve-credentials --target="$1" -- "${@:2}"
