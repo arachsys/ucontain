@@ -32,6 +32,12 @@ details of ld.so, libc and umount.
 However, unlike pivot_root from util-linux, pivot from Arachsys init can
 safely detach the old root before it returns, sidestepping any difficulty.
 
+This version of contain doesn't emulate a tty on /dev/console or implement
+the special behaviour of the original when run privileged, though it should
+safely fail when unshare can't find an entry for root in /etc/subuid.
+Helper scripts are also not directly supported, but extra commands are easy
+to add to the contain script itself.
+
 
 inject
 ------
@@ -66,6 +72,10 @@ pseudo
 
 This is recreated by unshare --user. We pass --map-auto and --map-root-user
 to set user namespace mappings using newuidmap/newgidmap, as with contain.
+
+This version of pseudo doesn't implement the special behaviour of the
+original when run privileged, though it should safely fail when unshare
+can't find an entry for root in /etc/subuid.
 
 
 Copying
