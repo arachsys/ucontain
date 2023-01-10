@@ -29,8 +29,16 @@ on the old root. Both ld.so and umount must ignore any configuration from
 new /etc. This would be dangerously fragile, depending on implementation
 details of ld.so, libc and umount.
 
+An alternative is to fork before the unsharing the mount namespace. The
+outer process can synchronise with the inner process using pipes or
+signals, and use umount -N to detach the old root on behalf of the inner
+process after it pivots to the new root. This is complicated and a little
+ugly, but would work fine provided the inner process is not allowed to
+proceed until the old root is safely detached.
+
 However, unlike pivot_root from util-linux, pivot from Arachsys init can
-safely detach the old root before it returns, sidestepping any difficulty.
+safely detach the old root itself before returning, which sidesteps any
+difficulty. We use this less convoluted option here.
 
 This version of contain doesn't emulate a tty on /dev/console or implement
 the special behaviour of the original when run privileged, though it should
