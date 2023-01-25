@@ -5,9 +5,12 @@ if [[ $# -lt 2 ]]; then
   exit 64
 fi
 
-if [[ $UID -ne 0 ]] || [[ $$ -ne 1 ]]; then
+if [[ $UID -ne 0 ]]; then
   exec unshare --cgroup --ipc --mount --net --pid --time --user --uts \
     --fork --kill-child --map-auto --map-root-user env -i "$0" "$@"
+elif [[ $$ -ne 1 ]]; then
+  exec unshare --cgroup --ipc --mount --net --pid --time --user --uts \
+    --fork --kill-child --map-auto --setuid=0 --setgid=0 env -i "$0" "$@"
 fi
 
 mount -o rbind -- "$1" "$1"

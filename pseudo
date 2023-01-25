@@ -5,4 +5,8 @@ if [[ $# -lt 1 ]]; then
   exit 64
 fi
 
-exec unshare --user --map-auto --map-root-user -- "$@"
+if [[ $UID -eq 0 ]]; then
+  exec unshare --user --map-auto --setuid=0 --setgid=0 -- "$@"
+else
+  exec unshare --user --map-auto --map-root-user -- "$@"
+fi
